@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  Env:
+    Type: String
+  IngressRule:
+    Type: CommaDelimitedList
+    Default: "22, 80, 443"
+  VpcId:
+    Type: String
+
+Resources:
+  WebServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+      GroupName: !Sub ${Env}-webserver-sg
+      GroupDescription: !Sub ${Env}-webserver-sg
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: !Select [ 0, !Ref IngressRule ]
+          ToPort: !Select [ 0, !Ref IngressRule ]
+          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          FromPort: !Select [ 1, !Ref IngressRule ]
+          ToPort: !Select [ 1, !Ref IngressRule ]
+          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          FromPort: !Select [ 2, !Ref IngressRule ]
+          ToPort: !Select [ 2, !Ref IngressRule ]
+          IpProtocol: tcp
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env}-webserver-sg
+
+Outputs:
+  WebserverSG:
+    Value: !Ref WebServerSG

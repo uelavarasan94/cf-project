@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  Env:
+    Type: String
+  InstanceType:
+    Type: String
+    AllowedValues: [ t3.nano, t3.micro, t3a.micro ]
+    Default: t3.micro
+  SecurityGroupId:
+    Type: String
+  SubnetId:
+    Type: CommaDelimitedList
+
+# Rules:
+#   dev:
+#     RuleCondition: !Equals [ !Ref Env, prod ]
+#     Assertions:
+#       - Assert: !Contains [ [ t3.nano, t3.micro ], !Ref InstanceType ]
+#         AssertDescription: "Dev environment sgould contains either t3.nano or t3.micro "
+#   prod:
+#     RuleCondition: !Equals [ !Ref Env, prod ]
+#     Assertsions:
+#       - Assert: !Equals [ t3a.micro, !Ref InstanceType ]
+
+Mappings:
+  AmiRegionMapping:
+    us-east-1:
+      Id: ami-0866a3c8686eaeeba
+    ap-south-1:
+      Id: ami-0866a3c8686eaeeba
+
+Conditions:
+  IsProd: !Equals [ !Ref Env, prod ]
+
+Resources:
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [ AmiRegionMapping, !Ref "AWS::Region", Id ]
+      InstanceType: !Ref InstanceType
+      SubnetId: !Select [ 0, !Ref SubnetId ]
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env}-web-server
+
+  WebServerEIP:
+    Type: AWS::EC2::EIP
+    Condition: IsProd
+    Properties:
+      InstanceId: !Ref WebServer
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env}-web-server-eip
+  
+  WebServerVolume:
+    Type: AWS::EC2::Volume
+    Condition: IsProd
+    Properties:
+      Size: 50
+      VolumeType: gp3
+      AvailabilityZone: !GetAtt WebServer.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env}-web-server-volume
+    DependsOn: WebServer
+
+  WebServerVolumeAttachment:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: IsProd
+    Properties:
+      Device: /dev/xvdh
+      VolumeId: !Ref WebServerVolume
+      InstanceId: !Ref WebServer
+
+Outputs:
+  WebServerId:
+    Value: !Ref WebServer

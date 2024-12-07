@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Env:
+    Type: String
+Mappings:
+  BucketNameMapping:
+    dev:
+      BucketName: dev.develpment.com
+    prod:
+      BucketName: prod.develpment.com
+
+Resources:
+  AppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !FindInMap [ BucketNameMapping, !Ref Env, BucketName ]
+
+

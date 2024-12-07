@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [ dev, prod ]
+
+Resources:
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cf-laravel-app-deployment.s3.us-east-1.amazonaws.com/vpc.yml
+      Parameters:
+        Env: !Ref Environment
+  WebServerSG:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cf-laravel-app-deployment.s3.us-east-1.amazonaws.com/sg.yml
+      Parameters:
+        Env: !Ref Environment
+        VpcId: !GetAtt VPC.Outputs.VPC
+    DependsOn: VPC
+  WebServer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cf-laravel-app-deployment.s3.us-east-1.amazonaws.com/ec2.yml
+      Parameters:
+        Env: !Ref Environment
+        SubnetId: !GetAtt VPC.Outputs.PublicSubnets
+        SecurityGroupId: !GetAtt WebServerSG.Outputs.WebserverSG
+  AppBucket:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cf-laravel-app-deployment.s3.us-east-1.amazonaws.com/s3.yml
+      Parameters:
+        Env: !Ref Environment
+
+Outputs:
+  VpcId:
+    Value: !GetAtt VPC.Outputs.VPC
+  WebServerInstanceId:
+    Value: !GetAtt WebServer.Outputs.WebServerId
+  WebServerSGId:
+    Value: !GetAtt WebServerSG.Outputs.WebserverSG
+  
